@@ -55,8 +55,12 @@ async def run_chat(session_id: str, message: str) -> AsyncIterator[SSEEvent]:
     yield StatusEvent(stage="guard", message="Validando pregunta")
 
     try:
+        # thread_id fresco por mensaje: evita que el MemorySaver restaure
+        # draft/findings/evidence de la iteración anterior y contamine la respuesta.
+        # (findings usa reductor suma y no se puede resetear vía initial_state)
+        run_thread_id = f"{session_id}:{uuid.uuid4()}"
         config = {
-            "configurable": {"thread_id": session_id},
+            "configurable": {"thread_id": run_thread_id},
             "recursion_limit": 20,
         }
 
@@ -66,6 +70,14 @@ async def run_chat(session_id: str, message: str) -> AsyncIterator[SSEEvent]:
             "replans": 0,
             "tool_calls": 0,
             "llm_calls": 0,
+            # Campos limpiados explícitamente para campos sin reductor:
+            "guard": None,
+            "plan": None,
+            "draft": None,
+            "verification": None,
+            "final_answer": None,
+            "citations": [],
+            "evidence": {},
         }
 
         final_state = None

@@ -34,8 +34,8 @@ from app.agents import observability
 from app.agents.runner import run_chat
 from app.config import settings
 from app.contracts import DoneEvent, ErrorEvent
-from app.indexstore import IndexStore
 from app.mcp_server.server import build_mcp
+from app.retrieval.core import list_documents
 
 
 # ── MCP (construir una vez al importar el módulo) ─────────────────────────────
@@ -241,7 +241,7 @@ async def chat_sync(body: ChatRequest, request: Request):
 @app.get("/api/documents")
 async def get_documents():
     """Lista todos los PDFs indexados con sus metadatos."""
-    return [d.model_dump() for d in IndexStore().documents()]
+    return [d.model_dump() for d in await list_documents()]
 
 
 # ── GET /api/files/{doc_id} ───────────────────────────────────────────────────
@@ -249,7 +249,7 @@ async def get_documents():
 @app.get("/api/files/{doc_id}")
 async def get_file(doc_id: str):
     """Sirve el PDF original inline. Valida doc_id contra el catálogo."""
-    docs_map = {d.doc_id: d for d in IndexStore().documents()}
+    docs_map = {d.doc_id: d for d in await list_documents()}
     if doc_id not in docs_map:
         raise HTTPException(status_code=404, detail=f"doc_id '{doc_id}' no encontrado en el catálogo.")
     doc = docs_map[doc_id]
