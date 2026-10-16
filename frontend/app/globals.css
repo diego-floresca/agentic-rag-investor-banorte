@@ -1,0 +1,173 @@
+/* Banorte Design Tokens */
+:root {
+  --rojo: #EB0029;
+  --rojo-web: #D82E34;
+  --rojo-oscuro: #83181D;
+  --gris-900: #343E47;
+  --gris-700: #5D666F;
+  --gris-200: #E0E0E0;
+  --gris-100: #EBEFF1;
+  --blanco: #FFFFFF;
+  --verde-ok: #2E7D32;
+  --ambar: #B26A00;
+}
+
+/* Reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html {
+  height: 100%;
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-height: 100%;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  font-size: 15px;
+  color: var(--gris-900);
+  background: var(--gris-100);
+  overflow-x: hidden;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+/* Tabular numbers for financial data */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Layout shell */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.app-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.app-sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background: var(--blanco);
+  border-right: 1px solid var(--gris-200);
+  overflow-y: auto;
+  transition: width 0.2s ease;
+}
+
+.app-sidebar.collapsed {
+  width: 0;
+  overflow: hidden;
+}
+
+.app-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--gris-100);
+}
+
+.app-pdf {
+  width: 380px;
+  flex-shrink: 0;
+  background: var(--blanco);
+  border-left: 1px solid var(--gris-200);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Footer */
+.app-footer {
+  background: var(--blanco);
+  border-top: 1px solid var(--gris-200);
+  padding: 6px 16px;
+  font-size: 11px;
+  color: var(--gris-700);
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* Skeleton animation */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.skeleton {
+  background: var(--gris-200);
+  border-radius: 4px;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+/* Table styles for markdown */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+}
+
+th {
+  background: var(--gris-900);
+  color: var(--blanco);
+  padding: 6px 10px;
+  text-align: left;
+  font-weight: 600;
+}
+
+td {
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--gris-200);
+}
+
+tr:nth-child(even) td {
+  background: var(--gris-100);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .app-sidebar {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    height: calc(100dvh - 56px);
+    z-index: 100;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+  }
+
+  .app-pdf {
+    position: fixed;
+    top: 56px;
+    right: 0;
+    height: calc(100dvh - 56px);
+    width: 100%;
+    z-index: 101;
+  }
+}

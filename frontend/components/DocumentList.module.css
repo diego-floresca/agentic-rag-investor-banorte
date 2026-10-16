@@ -1,0 +1,89 @@
+.list {
+  padding: 0 0 16px;
+}
+
+.header {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--gris-700);
+  padding: 14px 14px 8px;
+  border-bottom: 1px solid var(--gris-200);
+}
+
+.group {
+  margin-top: 4px;
+}
+
+.periodHeader {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gris-700);
+  padding: 8px 14px 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.docItem {
+  padding: 7px 14px;
+  cursor: default;
+}
+
+.docItem:hover {
+  background: var(--gris-100);
+}
+
+.docTitle {
+  font-size: 13px;
+  color: var(--gris-900);
+  display: block;
+  line-height: 1.4;
+}
+
+.docMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+}
+
+.badge {
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--gris-200);
+  color: var(--gris-700);
+  padding: 1px 6px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pages {
+  font-size: 11px;
+  color: var(--gris-700);
+}
+
+.empty {
+  padding: 24px 14px;
+  font-size: 13px;
+  color: var(--gris-700);
+}
+
+/* Skeleton */
+.skeletonItem {
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.skeletonLine {
+  height: 14px;
+  width: 80%;
+}
+
+.skeletonShort {
+  height: 10px;
+  width: 40%;
+}
