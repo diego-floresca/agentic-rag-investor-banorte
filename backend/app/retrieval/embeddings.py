@@ -61,7 +61,11 @@ def _sha256_vec(text: str, dim: int) -> list[float]:
         h = hashlib.sha256(seed + counter.to_bytes(4, "little")).digest()
         buf.extend(h)
         counter += 1
-    raw = list(struct.unpack_from(f"{dim}f", bytes(buf[:needed])))
+    # Interpretar como enteros sin signo (evita NaN que produce "f"/float32).
+    # NOTA T1: struct.unpack_from(f"{dim}f", ...) produce NaN para ciertos patrones
+    # de bytes; usamos unsigned int y mapeamos a [-1, 1].
+    raw_ints = struct.unpack_from(f"{dim}I", bytes(buf[:needed]))
+    raw = [(v / 2_147_483_648.0) - 1.0 for v in raw_ints]
     # Normalizar a módulo 1
     norm = math.sqrt(sum(v * v for v in raw)) or 1.0
     return [v / norm for v in raw]
@@ -104,7 +108,7 @@ class NoneEmbedder(Embedder):
 # ─────────────────────────────────────────────────────────────────
 
 class GeminiEmbedder(Embedder):
-    """Embedder con Gemini API.  T1 implementa el cuerpo."""
+    """Embedder con google-genai SDK. Una llamada por texto."""
 
     name = "gemini"
     dim: int
@@ -112,12 +116,52 @@ class GeminiEmbedder(Embedder):
     def __init__(self, model: str = settings.EMBED_MODEL, dim: int = settings.EMBED_DIM) -> None:
         self.dim = dim
         self._model = model
+        # Lazy client creation
+        self._client: Any = None
+
+    def _get_client(self) -> Any:
+        if self._client is None:
+            from google import genai  # noqa: PLC0415
+            self._client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        return self._client
 
     async def embed_documents(self, texts: list[str]) -> list[list[float]]:
-        raise NotImplementedError("T1")
+        """Vectoriza lista de textos con EMBED_CONCURRENCY y reintentos."""
+        try:
+            from tenacity import retry, stop_after_attempt, wait_exponential  # noqa: PLC0415
+            has_tenacity = True
+        except ImportError:
+            has_tenacity = False
+
+        semaphore = asyncio.Semaphore(settings.EMBED_CONCURRENCY)
+
+        async def _embed_one(text: str) -> list[float]:
+            async with semaphore:
+                client = self._get_client()
+                response = await client.aio.models.embed_content(
+                    model=self._model,
+                    contents=[text],
+                    config={"output_dimensionality": self.dim},
+                )
+                return list(response.embeddings[0].values)
+
+        if has_tenacity:
+            from tenacity import retry, stop_after_attempt, wait_exponential  # noqa: PLC0415
+
+            @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10))
+            async def _embed_one_with_retry(text: str) -> list[float]:
+                return await _embed_one(text)
+
+            tasks = [_embed_one_with_retry(t) for t in texts]
+        else:
+            tasks = [_embed_one(t) for t in texts]
+
+        return list(await asyncio.gather(*tasks))
 
     async def embed_query(self, text: str) -> list[float]:
-        raise NotImplementedError("T1")
+        """Vectoriza una consulta."""
+        vecs = await self.embed_documents([text])
+        return vecs[0]
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -221,7 +265,22 @@ def get_embedder(*, use_cache: bool = True) -> Embedder:
         inner = GeminiEmbedder()
     elif provider == "fastembed":
         # Importación perezosa: evita cargar el modelo en tests
-        raise NotImplementedError("T1")  # T1 implementa FastEmbedEmbedder
+        from fastembed import TextEmbedding  # noqa: PLC0415
+
+        class FastEmbedEmbedder(Embedder):  # noqa: PLW0621
+            name = "fastembed"
+
+            def __init__(self) -> None:
+                self.dim = settings.EMBED_DIM
+                self._model = TextEmbedding(model_name=settings.EMBED_MODEL)
+
+            async def embed_documents(self, texts: list[str]) -> list[list[float]]:
+                return [list(v) for v in self._model.embed(texts)]
+
+            async def embed_query(self, text: str) -> list[float]:
+                return list(next(self._model.query_embed(text)))
+
+        inner = FastEmbedEmbedder()
     else:
         raise ValueError(f"EMBED_PROVIDER desconocido: {provider!r}")
 
