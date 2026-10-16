@@ -15,3 +15,9 @@ backend/.env
 *.pyo
 .ruff_cache
 .mypy_cache
+backend/tests/
+evals/
+deploy/
+diag.sh
+prompty.md
+AGENTS.md
