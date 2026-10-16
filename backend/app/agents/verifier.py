@@ -192,7 +192,7 @@ def _llm_verify(state: GraphState, draft: Draft) -> list[str]:
     """Verificación LLM para comparativas y cálculos."""
     try:
         from langchain_core.messages import HumanMessage, SystemMessage  # noqa: PLC0415
-        from app.agents.llm import get_llm  # noqa: PLC0415
+        from app.agents.llm import extract_text, get_llm  # noqa: PLC0415
 
         evidence_summary = "\n".join(
             f"[{cid}]: {chunk.text[:200]}"
@@ -214,7 +214,7 @@ def _llm_verify(state: GraphState, draft: Draft) -> list[str]:
             SystemMessage(content="Eres un verificador de hechos financieros. Detecta inconsistencias."),
             HumanMessage(content=prompt),
         ])
-        content = response.content if hasattr(response, "content") else str(response)
+        content = extract_text(response)
         import json  # noqa: PLC0415
         m = re.search(r"\{.*\}", content, re.DOTALL)
         if m:

@@ -16,7 +16,7 @@ import re
 
 from langchain_core.messages import HumanMessage
 
-from app.agents.llm import get_llm
+from app.agents.llm import extract_text, get_llm
 from app.config import settings
 from app.contracts import GraphState, GuardResult
 
@@ -131,7 +131,7 @@ def input_guard_node(state: GraphState) -> dict:
 
     try:
         response = llm.invoke([HumanMessage(content=prompt)])
-        content = response.content if hasattr(response, "content") else str(response)
+        content = extract_text(response)
         result = _parse_guard_json(content, flags)
     except Exception:  # noqa: BLE001
         # Ante fallo del LLM: permitir con advertencia (fail-open para UX)

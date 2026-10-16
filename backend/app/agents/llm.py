@@ -14,10 +14,37 @@ Variables de entorno relevantes (pueden ir en .env):
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 from langchain_core.language_models import BaseChatModel
 
 from app.config import settings
+
+# Cargar el .env en os.environ para que MODEL_GUARD, MODEL_ANALYST,
+# THINKING_* estén disponibles vía os.environ.get().
+# pydantic-settings los lee para poblar Settings pero NO los exporta a os.environ.
+_ENV_FILE = (Path(__file__).parent.parent.parent / ".env").resolve()
+try:
+    from dotenv import load_dotenv  # noqa: PLC0415
+    load_dotenv(_ENV_FILE, override=False)  # override=False: las vars de shell tienen prioridad
+except ImportError:
+    pass
+
+
+def extract_text(response_or_content) -> str:
+    """Normaliza la respuesta de cualquier Gemini (incluyendo thinking).
+
+    Gemini con thinking devuelve response.content como lista de partes
+    [{type: "thinking", text: ...}, {type: "text", text: ...}].
+    Esta función extrae y une solo las partes de texto.
+    """
+    raw = response_or_content.content if hasattr(response_or_content, "content") else response_or_content
+    if isinstance(raw, list):
+        return "\n".join(
+            p.get("text", "") if isinstance(p, dict) else str(p)
+            for p in raw
+        )
+    return str(raw)
 
 
 def get_llm(role: str) -> BaseChatModel:

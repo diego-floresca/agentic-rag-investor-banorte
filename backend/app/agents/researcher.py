@@ -14,6 +14,7 @@ from typing import Any
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.tools import BaseTool
 
+from app.agents.llm import extract_text
 from app.config import settings
 from app.contracts import Chunk, Finding, GraphState, SubQuery
 
@@ -165,7 +166,7 @@ def make_researcher_node(tools: list[BaseTool]):
 
 def _parse_finding(last_msg: Any, subquery_id: str, evidence_ids: list[str]) -> Finding:
     import re  # noqa: PLC0415
-    content = last_msg.content if hasattr(last_msg, "content") else str(last_msg)
+    content = extract_text(last_msg)
     m = re.search(r"\{.*\}", content, re.DOTALL)
     if m:
         try:

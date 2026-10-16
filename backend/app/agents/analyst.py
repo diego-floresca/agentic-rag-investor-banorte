@@ -20,7 +20,7 @@ from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
 
-from app.agents.llm import get_llm
+from app.agents.llm import extract_text, get_llm
 from app.config import settings
 from app.contracts import Calculation, Draft, GraphState
 
@@ -306,7 +306,7 @@ def _build_evidence_blocks(state: GraphState) -> str:
 
 
 def _parse_draft(last_msg: Any, calculations: list[Calculation]) -> Draft:
-    content = last_msg.content if hasattr(last_msg, "content") else str(last_msg)
+    content = extract_text(last_msg)
     m = re.search(r"\{.*\}", content, re.DOTALL)
     if m:
         try:

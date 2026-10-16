@@ -19,7 +19,7 @@ from typing import Any
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from app.agents.llm import get_llm
+from app.agents.llm import extract_text, get_llm
 from app.config import settings
 from app.contracts import Filters, GraphState, Plan, SubQuery
 
@@ -109,7 +109,7 @@ def planner_node(state: GraphState) -> dict:
             SystemMessage(content=_SYSTEM_PROMPT),
             HumanMessage(content=user_content),
         ])
-        content = response.content if hasattr(response, "content") else str(response)
+        content = extract_text(response)
         plan = _parse_plan(content)
     except Exception as exc:  # noqa: BLE001
         # Fallback: plan directo con error
