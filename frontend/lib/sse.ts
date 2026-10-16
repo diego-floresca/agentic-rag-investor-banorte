@@ -29,6 +29,54 @@ export interface Message {
   error: string | null;
 }
 
+// ─────────────────────────────────────────────────────────────────
+// Funciones puras de parseo SSE (exportadas para tests)
+// ─────────────────────────────────────────────────────────────────
+
+/**
+ * Normaliza \r\n y \r sueltos a \n, luego parte el buffer en bloques SSE
+ * completos (separados por \n\n) devolviendo el fragmento incompleto restante.
+ * Esto corrige sse-starlette, que usa \r\n como terminador de línea.
+ */
+export function splitSSEBuffer(
+  buffer: string
+): { blocks: string[]; remaining: string } {
+  const normalized = buffer.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  const parts = normalized.split("\n\n");
+  const remaining = parts.pop() ?? "";
+  return { blocks: parts, remaining };
+}
+
+/**
+ * Parsea un bloque SSE ya completo (sin separadores de bloque).
+ * Devuelve { event, data } o null si no hay campo data válido.
+ */
+export function parseSSEBlock(
+  block: string
+): { event: string; data: unknown } | null {
+  if (!block.trim()) return null;
+  const lines = block.split("\n");
+  let eventName = "message";
+  let dataStr = "";
+  for (const line of lines) {
+    if (line.startsWith("event:")) {
+      eventName = line.slice(6).trim();
+    } else if (line.startsWith("data:")) {
+      dataStr = line.slice(5).trim();
+    }
+  }
+  if (!dataStr) return null;
+  try {
+    return { event: eventName, data: JSON.parse(dataStr) };
+  } catch {
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Hook
+// ─────────────────────────────────────────────────────────────────
+
 const USE_MOCK = process.env.NEXT_PUBLIC_MOCK === "1";
 
 function newAssistantMessage(): Message {
@@ -51,16 +99,19 @@ export function useChatStream(apiBase: string = API_BASE) {
   const abortRef = useRef<AbortController | null>(null);
   const sessionId = useRef(`web-${Date.now()}`);
 
-  const updateLastAssistant = useCallback((updater: (m: Message) => Message) => {
-    setMessages((prev) => {
-      const next = [...prev];
-      const idx = next.length - 1;
-      if (idx >= 0 && next[idx].role === "assistant") {
-        next[idx] = updater({ ...next[idx] });
-      }
-      return next;
-    });
-  }, []);
+  const updateLastAssistant = useCallback(
+    (updater: (m: Message) => Message) => {
+      setMessages((prev) => {
+        const next = [...prev];
+        const idx = next.length - 1;
+        if (idx >= 0 && next[idx].role === "assistant") {
+          next[idx] = updater({ ...next[idx] });
+        }
+        return next;
+      });
+    },
+    []
+  );
 
   const processEvent = useCallback(
     (event: string, data: unknown) => {
@@ -120,7 +171,6 @@ export function useChatStream(apiBase: string = API_BASE) {
     async (text: string) => {
       if (isStreaming) return;
 
-      // Add user message
       const userMsg: Message = {
         role: "user",
         content: text,
@@ -137,7 +187,6 @@ export function useChatStream(apiBase: string = API_BASE) {
       setStatusMsg("Iniciando…");
 
       if (USE_MOCK) {
-        // Use mock stream
         try {
           for await (const ev of mockStream()) {
             processEvent(ev.event, ev.data);
@@ -154,7 +203,6 @@ export function useChatStream(apiBase: string = API_BASE) {
         return;
       }
 
-      // Real fetch
       const ctrl = new AbortController();
       abortRef.current = ctrl;
 
@@ -169,9 +217,7 @@ export function useChatStream(apiBase: string = API_BASE) {
           signal: ctrl.signal,
         });
 
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const reader = res.body?.getReader();
         if (!reader) throw new Error("No readable stream");
@@ -181,38 +227,31 @@ export function useChatStream(apiBase: string = API_BASE) {
 
         while (true) {
           const { done, value } = await reader.read();
-          if (done) break;
 
-          buffer += decoder.decode(value, { stream: true });
-
-          // Split on double newlines to get SSE blocks
-          const blocks = buffer.split(/\n\n/);
-          buffer = blocks.pop() ?? "";
-
-          for (const block of blocks) {
-            if (!block.trim()) continue;
-            const lines = block.split("\n");
-            let eventName = "message";
-            let dataStr = "";
-
-            for (const line of lines) {
-              if (line.startsWith("event:")) {
-                eventName = line.slice(6).trim();
-              } else if (line.startsWith("data:")) {
-                dataStr = line.slice(5).trim();
-              }
-            }
-
-            if (dataStr) {
-              try {
-                const parsed = JSON.parse(dataStr);
-                processEvent(eventName, parsed);
-              } catch {
-                // ignore malformed JSON
-              }
+          if (value) {
+            buffer += decoder.decode(value, { stream: true });
+            const { blocks, remaining } = splitSSEBuffer(buffer);
+            buffer = remaining;
+            for (const block of blocks) {
+              const parsed = parseSSEBlock(block);
+              if (parsed) processEvent(parsed.event, parsed.data);
             }
           }
+
+          if (done) {
+            // Último fragmento si el stream cerró sin \n\n final
+            if (buffer.trim()) {
+              const parsed = parseSSEBlock(buffer);
+              if (parsed) processEvent(parsed.event, parsed.data);
+            }
+            break;
+          }
         }
+
+        // Garantía: si done nunca llegó (corte de red), limpiar estado
+        setIsStreaming(false);
+        setStatusMsg("");
+        updateLastAssistant((m) => (m.done ? m : { ...m, done: true }));
       } catch (err) {
         if (err instanceof Error && err.name === "AbortError") {
           updateLastAssistant((m) => ({ ...m, done: true }));
