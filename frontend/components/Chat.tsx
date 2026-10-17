@@ -18,7 +18,6 @@ export default function Chat({ onCitationClick }: ChatProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-scroll to bottom when messages update
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, statusMsg]);
@@ -42,7 +41,6 @@ export default function Chat({ onCitationClick }: ChatProps) {
 
   function handleInput(e: React.ChangeEvent<HTMLTextAreaElement>) {
     setInput(e.target.value);
-    // Auto-resize textarea
     const ta = e.target;
     ta.style.height = "auto";
     ta.style.height = `${Math.min(ta.scrollHeight, 160)}px`;
@@ -55,11 +53,12 @@ export default function Chat({ onCitationClick }: ChatProps) {
       <div className={styles.messageArea}>
         {showSuggestions && (
           <div className={styles.welcome}>
+            <div className={styles.welcomeIcon}>B</div>
             <p className={styles.welcomeTitle}>
-              Asistente de Relacion con Inversionistas
+              Asistente de Relación con Inversionistas
             </p>
             <p className={styles.welcomeSubtitle}>
-              Consulta información publica de los reportes trimestrales y anuales.
+              Consulta cifras financieras de los reportes trimestrales y anuales de Banorte con referencia exacta a la fuente.
             </p>
             <Suggestions onSelect={(text) => sendMessage(text)} />
           </div>
@@ -88,20 +87,22 @@ export default function Chat({ onCitationClick }: ChatProps) {
           />
           {isStreaming ? (
             <button
-              className={`${styles.btn} ${styles.stopBtn}`}
+              className={styles.stopBtn}
               onClick={abort}
               aria-label="Detener"
             >
-              Detener
+              <span>■</span> Detener
             </button>
           ) : (
             <button
-              className={`${styles.btn} ${styles.sendBtn}`}
+              className={styles.sendBtn}
               onClick={handleSend}
               disabled={!input.trim()}
               aria-label="Enviar"
             >
-              Enviar
+              <svg className={styles.sendIcon} viewBox="0 0 16 16" fill="none" aria-hidden>
+                <path d="M14.5 8L2 2l2.5 6L2 14l12.5-6z" fill="currentColor"/>
+              </svg>
             </button>
           )}
         </div>

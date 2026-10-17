@@ -24,15 +24,28 @@ function groupByPeriod(docs: DocumentInfo[]): Record<string, DocumentInfo[]> {
   }, {});
 }
 
+const KIND_ICON: Record<string, string> = {
+  reporte: "📊",
+  anual: "📋",
+  presentacion: "📑",
+  transcripcion: "🎙️",
+  estado_financiero: "🏦",
+};
+
 export default function DocumentList({ documents, isLoading }: DocumentListProps) {
   if (isLoading) {
     return (
       <div className={styles.list}>
-        <div className={styles.header}>Documentos</div>
+        <div className={styles.header}>
+          <div className={styles.headerLabel}>Corpus</div>
+          <div className={styles.headerTitle}>Documentos</div>
+        </div>
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className={styles.skeletonItem}>
-            <div className={`skeleton ${styles.skeletonLine}`} />
-            <div className={`skeleton ${styles.skeletonShort}`} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 0, flex: 1 }}>
+              <div className={`skeleton ${styles.skeletonLine}`} />
+              <div className={`skeleton ${styles.skeletonShort}`} />
+            </div>
           </div>
         ))}
       </div>
@@ -42,7 +55,10 @@ export default function DocumentList({ documents, isLoading }: DocumentListProps
   if (documents.length === 0) {
     return (
       <div className={styles.list}>
-        <div className={styles.header}>Documentos</div>
+        <div className={styles.header}>
+          <div className={styles.headerLabel}>Corpus</div>
+          <div className={styles.headerTitle}>Documentos</div>
+        </div>
         <div className={styles.empty}>No hay documentos disponibles.</div>
       </div>
     );
@@ -53,16 +69,27 @@ export default function DocumentList({ documents, isLoading }: DocumentListProps
 
   return (
     <div className={styles.list}>
-      <div className={styles.header}>Documentos</div>
+      <div className={styles.header}>
+        <div className={styles.headerLabel}>Corpus</div>
+        <div className={styles.headerTitle}>{documents.length} documentos</div>
+      </div>
       {periods.map((period) => (
         <div key={period} className={styles.group}>
-          <div className={styles.periodHeader}>{period}</div>
+          <div className={styles.periodHeader}>
+            <span className={styles.periodPill}>{period}</span>
+            <span className={styles.periodDivider} />
+          </div>
           {grouped[period].map((doc) => (
             <div key={doc.doc_id} className={styles.docItem}>
-              <span className={styles.docTitle}>{doc.title}</span>
-              <div className={styles.docMeta}>
-                <span className={styles.badge}>{doc.source_kind}</span>
-                <span className={styles.pages}>{doc.pages} págs.</span>
+              <span className={styles.docIcon}>
+                {KIND_ICON[doc.source_kind] ?? "📄"}
+              </span>
+              <div className={styles.docContent}>
+                <span className={styles.docTitle}>{doc.title}</span>
+                <div className={styles.docMeta}>
+                  <span className={styles.badge}>{doc.source_kind}</span>
+                  <span className={styles.pages}>{doc.pages} págs.</span>
+                </div>
               </div>
             </div>
           ))}

@@ -67,48 +67,7 @@ eval:
 
 bundle:
 	@echo "=== Empaquetando índice y PDFs en bundle/ ==="
-	@mkdir -p bundle/index bundle/pdfs
-	@cd backend && uv run python -c "
-import shutil, subprocess
-from pathlib import Path
-from app.config import settings
-from app.indexstore import IndexStore
-
-store = IndexStore()
-ver = store.current()
-if not ver:
-    raise SystemExit(f'ERROR: no hay CURRENT en INDEX_DIR={settings.INDEX_DIR}')
-print(f'  Versión activa: {ver}')
-
-# Copiar directorio Qdrant + metadatos al bundle
-dst = Path('../bundle/index')
-dst.mkdir(parents=True, exist_ok=True)
-ver_dst = dst / ver
-if ver_dst.exists():
-    shutil.rmtree(ver_dst)
-shutil.copytree(settings.INDEX_DIR / ver, ver_dst)
-for ext in ('.meta.json', '.documents.json', '.pages.jsonl'):
-    f = settings.INDEX_DIR / (ver + ext)
-    if f.exists():
-        shutil.copy2(f, dst / f.name)
-(dst / 'CURRENT').write_text(ver)
-
-# Copiar PDFs del catálogo
-docs = store.documents()
-pdfs_dst = Path('../bundle/pdfs')
-pdfs_dst.mkdir(parents=True, exist_ok=True)
-copied = 0
-for d in docs:
-    src = settings.DATA_DIR / d.filename
-    if src.exists():
-        shutil.copy2(src, pdfs_dst / d.filename)
-        copied += 1
-    else:
-        print(f'  ADVERTENCIA: PDF no encontrado: {src}')
-print(f'  PDFs copiados: {copied}/{len(docs)}')
-
-r = subprocess.run(['du', '-sh', '../bundle'], capture_output=True, text=True)
-print(f'  Tamaño bundle: {r.stdout.split()[0] if r.returncode == 0 else \"?\"}')"
+	cd backend && uv run python scripts/make_bundle.py
 	@echo "=== bundle/ listo ==="
 
 # ── Deploy: bundle + build frontend + gcloud run deploy ──────────────────────
@@ -133,14 +92,15 @@ deploy: bundle
 	    --max-instances 2 \
 	    --min-instances 0 \
 	    --set-secrets GEMINI_API_KEY=gemini-api-key:latest \
-	    --set-env-vars "RUNNER_MODE=real,RETRIEVAL_MODE=mcp,\
+	    --set-env-vars "RUNNER_MODE=real,RETRIEVAL_MODE=direct,\
 INDEX_DIR=/app/bundle/index,DATA_DIR=/app/bundle/pdfs,\
-LLM_MODEL=$${LLM_MODEL:-gemini-2.0-flash},\
+LLM_MODEL=$${LLM_MODEL:-gemini-3.8-flash},\
 EMBED_PROVIDER=$${EMBED_PROVIDER:-fastembed},\
 EMBED_MODEL=$${EMBED_MODEL:-BAAI/bge-small-en-v1.5},\
 EMBED_DIM=$${EMBED_DIM:-384},\
 RERANK=$${RERANK:-},\
-RATE_LIMIT_PER_MIN=$${RATE_LIMIT_PER_MIN:-20}" && \
+RATE_LIMIT_PER_MIN=$${RATE_LIMIT_PER_MIN:-20},\
+TIMEOUT_S=$${TIMEOUT_S:-120}" && \
 	URL=$$(gcloud run services describe $$SERVICE --region $$REGION \
 	    --format='value(status.url)' 2>/dev/null); \
 	echo ""; \

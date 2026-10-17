@@ -53,6 +53,31 @@ flowchart TD
 | Hook `useChatStream` en Chat.tsx | Context global | El chat es una sola pantalla; contexto añade complejidad sin beneficio |
 | `system-ui` (sin fuentes externas) | Inter / Geist | SKILL.md lo requiere; elimina dependencia de CDN de Google Fonts |
 
+## 4b. Rediseño UI (aplicado en producción)
+
+Los componentes principales fueron rediseñados con estética moderna manteniendo los colores de marca Banorte:
+
+**Variables CSS añadidas** (`globals.css`):
+- `--rojo-light`, `--gris-150`, `--gris-400`, `--shadow-xs/sm/md`, `--radius-sm/md/lg`
+
+**TopBar** (`TopBar.tsx` / `TopBar.module.css`):
+- Barra de 60 px con gradiente `--rojo` → `--rojo-oscuro`
+- Logo mark "B" como bloque coloreado
+- Título "Relación con Inversionistas" + subtítulo "Asistente · Grupo Financiero Banorte"
+- Botón de modo oscuro/claro con transición suave
+
+**DocumentList** (`DocumentList.tsx` / `DocumentList.module.css`):
+- Cabecera sticky con contador de documentos
+- Pills de periodo con fondo `--rojo-light` y borde `rgba(235,0,41,0.18)`
+- Hover con borde izquierdo rojo y fondo `--gris-100`
+- Emojis por `source_kind` (📊 reporte, 📋 anual, 📑 presentacion, 🎙️ transcripcion, 🏦 estado_financiero)
+
+**Chat** (`Chat.tsx` / `Chat.module.css`):
+- Pantalla de bienvenida con icono "B" degradado y subtítulo
+- Botón de envío como icono SVG de avión de papel (36×36 px)
+- Focus ring rojo en el textarea (`rgba(235,0,41,0.08)`)
+- Botón "Detener" con `■` y borde `--gris-200`
+
 ## 5. Contrato que toca (SPEC sección API y Eventos SSE)
 
 - `POST /api/chat {session_id, message}` → SSE con eventos `status`, `plan`, `tool_call`, `tool_result`, `finding`, `verification`, `token`, `citations`, `error`, `done`.

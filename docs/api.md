@@ -44,12 +44,12 @@ sequenceDiagram
     B->>A: POST /api/chat {session_id, message}
     A->>A: verificar rate limit (IP, 20/min)
     A->>R: run_chat(session_id, message)
-    loop eventos (hasta 45 s)
+    loop eventos (hasta 120 s)
         R-->>A: SSEEvent (status/plan/tool_call/…/token/citations/done)
         A-->>B: event: <tipo>\ndata: <json>\n\n
     end
     Note over A,B: ping ": ping" cada 15 s (keep-alive en proxies)
-    alt timeout 45 s
+    alt timeout 120 s
         A-->>B: event: error + event: done
     else cliente desconectado
         A: cancela el generador
@@ -167,7 +167,7 @@ Montado con `StaticFiles(html=True)` al final para no enmascarar las rutas API.
 | Protocolo streaming | SSE | WebSocket | Unidireccional, sin estado, proxies sin config |
 | Rate limiter | En memoria por IP | Redis | Sin dependencias externas; Cloud Run tiene max 20 instancias y concurrency 20 |
 | MCP rate limit | ASGI wrapper puro | `BaseHTTPMiddleware` | Evita buffering en respuestas streaming |
-| Timeout | `asyncio.timeout` (45 s) | `asyncio.wait_for` | Misma semántica, más legible en Python 3.11+ |
+| Timeout | `asyncio.timeout` (120 s) | `asyncio.wait_for` | Misma semántica, más legible en Python 3.11+; 120 s cubre pipeline de 20+ LLM calls |
 | Health MCP check | `list_tools()` directo | HTTP a `/mcp` | Evita llamada circular; prueba el mismo código |
 | Frontend mount | `StaticFiles` al final | Servidor Nginx separado | Un solo contenedor, menos coste en Cloud Run |
 
@@ -179,7 +179,7 @@ Montado con `StaticFiles(html=True)` al final para no enmascarar las rutas API.
 - `POST /api/chat/sync` → JSON con `answer_md`, `citations`, `plan`, `verification`.
 - `GET /api/health` → `index = CURRENT`; `mcp = list_tools < 2 s`; `llm = key exists`.
 - Rate limit: `RATE_LIMIT_PER_MIN` (20) por IP en ventana de 60 s.
-- Timeout: `TIMEOUT_S` (45 s) → `error(timeout) + done`.
+- Timeout: `TIMEOUT_S` (120 s) → `error(timeout) + done`.
 
 ---
 

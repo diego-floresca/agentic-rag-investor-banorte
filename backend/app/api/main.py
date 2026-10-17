@@ -25,6 +25,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exception_handlers import http_exception_handler as _default_http_handler
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -122,6 +123,15 @@ async def _lifespan(app: FastAPI):
 
 app = FastAPI(title="Banorte IR Agent", lifespan=_lifespan)
 
+# CORS: permite localhost en dev (Next.js :3000) y cualquier origen en prod
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # ── Exception handler: 429 con JSON plano (consistente con /mcp) ──────────────
 
@@ -218,6 +228,8 @@ async def chat_sync(body: ChatRequest, request: Request):
             plan = event.model_dump(exclude={"type"})
         elif t == "verification":
             verification = event.model_dump(exclude={"type"})
+        elif t == "error":
+            tokens.append(f"[ERROR:{event.code}:{event.message}]")
         elif t == "done":
             trace_id = event.trace_id
             latency_ms = event.latency_ms

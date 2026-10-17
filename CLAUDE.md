@@ -62,6 +62,22 @@ Mermaid pequeño; 4) decisiones y alternativas descartadas, en tabla; 5) contrat
 - `langchain-mcp-adapters` no es compatible con `mcp` 2.x: el cliente MCP usa el SDK `mcp` directo.
 - Nunca LLM por página en el nivel 1.
 - Sin `.gcloudignore` propio, gcloud usa el .gitignore y la imagen sale sin índice ni frontend.
+- El SDK `google-genai` activa **AFC (Automatic Function Calling) por defecto**. AFC intenta ejecutar las
+  StructuredTools de LangChain dentro del SDK; como son funciones locales que Gemini no puede llamar
+  directamente, devuelve contenido vacío de forma silenciosa. Deshabilitar siempre con
+  `AutomaticFunctionCallingConfig(disable=True)` en `model_kwargs` al construir `ChatGoogleGenerativeAI`.
+- **LangGraph MemorySaver** serializa el estado con msgpack. Los modelos Pydantic anidados
+  (`Plan`, `Draft`, `Verification`, etc.) pueden llegar como `dict` a nodos posteriores.
+  Usa `isinstance(x, dict)` guards en todos los nodos que lean campos de tipo Pydantic, y
+  el helper `_sv(state, key)` para leer desde `snapshot.values` fuera del grafo.
+- Los campos con **escrituras concurrentes en fan-out** (`evidence`, `tool_calls`, `llm_calls`)
+  deben tener `Annotated[tipo, reductor]` en `GraphState`. Sin reductor, LangGraph lanza
+  `INVALID_CONCURRENT_GRAPH_UPDATE`. Cada nodo devuelve el **delta** (no el acumulado).
+- Si el loop de tool calls del analista rompe por límite antes de procesar todos los `tool_calls`
+  del AIMessage, el `llm.invoke` final falla porque quedan tool_call_ids sin ToolMessage pareja.
+  Añadir ToolMessages stub para los calls no procesados antes de llamar al LLM final.
+- `RETRIEVAL_MODE=mcp` requiere un proceso separado en puerto 8001. En Cloud Run contenedor único
+  no existe ese proceso; usar siempre `RETRIEVAL_MODE=direct` en despliegue de imagen única.
 
 ## Comandos
 make probe | make ingest [TIER=1|2] | make index-status | make index-use V=vN | make retrieval-eval | make mcp | make test | make api |

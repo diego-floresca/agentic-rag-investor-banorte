@@ -137,7 +137,7 @@ def input_guard_node(state: GraphState) -> dict:
         # Ante fallo del LLM: permitir con advertencia (fail-open para UX)
         result = GuardResult(allowed=True, reason="LLM guard no disponible.", flags=flags)
 
-    return {"guard": result, "question": clean_question, "llm_calls": state.llm_calls + 1}
+    return {"guard": result, "question": clean_question, "llm_calls": 1}
 
 
 def _parse_guard_json(content: str, extra_flags: list[str]) -> GuardResult:

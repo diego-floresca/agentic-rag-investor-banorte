@@ -32,15 +32,20 @@ FROM python:3.12-slim
 | `INDEX_DIR` | `/app/bundle/index` | Índice Qdrant (solo lectura) |
 | `DATA_DIR` | `/app/bundle/pdfs` | PDFs del catálogo |
 | `RUNNER_MODE` | `real` | Activa LangGraph completo |
-| `RETRIEVAL_MODE` | `mcp` | Retrieval vía servidor MCP interno |
+| `RETRIEVAL_MODE` | `direct` | Qdrant en el mismo proceso (no MCP) |
 | `GEMINI_API_KEY` | secreto GCP | Montado desde Secret Manager |
-| `LLM_MODEL` | `gemini-2.0-flash` | Modelo de generación |
+| `LLM_MODEL` | `gemini-3.8-flash` | Modelo de generación |
+| `MODEL_ANALYST` | `gemini-3.8-flash` | Modelo para el analista |
 | `EMBED_PROVIDER` | `fastembed` | Embeddings locales (sin red) |
 | `EMBED_MODEL` | `BAAI/bge-small-en-v1.5` | Modelo de embeddings |
 | `EMBED_DIM` | `384` | Dimensión de los vectores densos |
 | `RERANK` | `` (vacío) | `fastembed` si se instala el cross-encoder |
 | `RATE_LIMIT_PER_MIN` | `20` | Límite de peticiones por IP |
+| `TIMEOUT_S` | `120` | Timeout del pipeline de chat |
 | `PORT` | asignado por Cloud Run | Puerto en el que escucha uvicorn |
+
+> **Nota:** `RETRIEVAL_MODE=mcp` requiere un proceso MCP corriendo en puerto 8001. En Cloud Run
+> con imagen única ese proceso no existe; siempre usar `direct` en despliegue de contenedor único.
 
 ### PATH y PYTHONPATH
 
@@ -145,12 +150,25 @@ gcloud run deploy banorte-ir-agent --source . --region us-central1 \
 ## Verificación post-despliegue
 
 ```bash
-URL=https://banorte-ir-agent-xxx-uc.a.run.app
+URL=https://banorte-ir-agent-851077316741.us-central1.run.app
 
 # Health
 curl $URL/api/health | python3 -m json.tool
 
-# SSE chat
+# Sync (respuesta JSON, más fácil para verificar)
+curl -s -X POST $URL/api/chat/sync \
+  -H "Content-Type: application/json" \
+  -d '{"message": "utilidad neta de Banorte"}' \
+  --max-time 130 | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+print('answer:', d['answer_md'][:200])
+print('llm_calls:', d['llm_calls'])
+print('citations:', len(d['citations']))
+"
+# Esperado: answer no vacío, llm_calls > 5, citations > 0
+
+# SSE streaming
 curl -N -X POST $URL/api/chat \
   -H "Content-Type: application/json" \
   -d '{"message": "¿cuál fue la utilidad neta en 2T26?"}'

@@ -73,18 +73,40 @@ En `GRAPH_MODE=simple` el fan-out es secuencial (`researcher_seq`) y procesa sol
 - §Modelos de los agentes: GuardResult, Plan, SubQuery, Filters, Finding, Calculation, Draft, Verification, Citation, GraphState
 - §Runner: `run_chat(session_id, message) → AsyncIterator[SSEEvent]`; RUNNER_MODE, GRAPH_MODE
 - §Eventos SSE: order status → plan → tool_call/tool_result → finding → verification → token* → citations → done
-- §Límites: MAX_SUBQUERIES=4, MAX_TOOL_CALLS_RESEARCHER=3, MAX_TOOL_CALLS_ANALYST=3, MAX_REPLANS=1, TIMEOUT_S=45
+- §Límites: MAX_SUBQUERIES=4, MAX_TOOL_CALLS_RESEARCHER=3, MAX_TOOL_CALLS_ANALYST=3, MAX_REPLANS=1, TIMEOUT_S=120
 - §Normalización: cifras de evidencia y draft se comparan con normalize_number (SPEC §Normalización)
 
-## 6. Límites y qué cambiaría en producción
+## 6. Comportamiento de despliegue documentado
 
-- **TIMEOUT_S=45**: en producción, monitorizar p95 y bajar THINKING_ANALYST si supera 30 s.
+Valores observados en Cloud Run (GRAPH_MODE=full, LLM_MODEL=gemini-3.8-flash):
+
+| Métrica | Valor observado |
+|---|---|
+| `llm_calls` típico | 18–22 |
+| `tool_calls` típico | 10–14 |
+| Citas por respuesta | 5–9 |
+| Latencia P50 | ~50–90 s |
+
+### Bugs resueltos en producción
+
+| Bug | Síntoma | Causa | Fix aplicado |
+|---|---|---|---|
+| AFC silencioso | `answer_md: ""`, llm_calls > 0 | google-genai activa AFC por defecto; nuestras tools son locales | `AutomaticFunctionCallingConfig(disable=True)` en `llm.py` |
+| Dangling tool_call_ids | LLM final devuelve vacío | Loop rompe por límite sin responder todos los tool_calls del AIMessage | ToolMessages stub para calls no procesados en `analyst.py` |
+| `plan.intent` AttributeError | `llm_calls: 0` | `snapshot.values` es dict, no Pydantic | `_sv()` helper + isinstance guards en `runner_real.py` |
+| `INVALID_CONCURRENT_GRAPH_UPDATE` | Error en fan-out | `evidence`/`tool_calls`/`llm_calls` sin reductor | `Annotated[tipo, reductor]` en `GraphState` |
+| `draft.answer_md` AttributeError | `final_answer: None` | MemorySaver deserializa Draft como dict | `isinstance(draft, dict)` guard en `output_guard_node` |
+
+## 7. Límites y qué cambiaría en producción
+
+- **TIMEOUT_S=120**: suficiente para el pipeline completo con 20+ LLM calls. En producción monitorizar p95 y ajustar según modelo elegido.
 - **MemorySaver en memoria**: en producción, sustituir por un checkpointer persistente (PostgreSQL o Redis) para sobrevivir reinicios de Cloud Run.
 - **MAX_REPLANS=1**: suficiente para correcciones simples; en corpus con tablas ambiguas podría subir a 2.
 - **LLM_CONCURRENCY=8**: controla los semáforos de Gemini; ajustar según cuota de la API key.
 - **Inyección**: las reglas regex cubren patrones conocidos; en producción añadir un modelo clasificador fine-tuneado.
+- **AFC deshabilitado**: solución pragmática para la versión actual de google-genai. Revisitar si el SDK ofrece un modo "manual tool call" más explícito.
 
-## 7. Cómo probarlo
+## 8. Cómo probarlo
 
 ### COMPUERTA A (fakes — sin red):
 ```bash
@@ -94,10 +116,19 @@ uv run pytest tests/test_graph.py -v
 
 ### COMPUERTA C3 (real — requiere índice y GEMINI_API_KEY):
 ```bash
-RUNNER_MODE=real RETRIEVAL_MODE=direct \
-  uv run python -m app.agents.cli "¿Cuál fue la utilidad neta en el 2T26?"
-# Debe responder la cifra con [n] citando la página correcta
-# Latencia objetivo: < 30 s; llm_calls ≤ 6
+# Sync (más fácil para verificar)
+curl -s -X POST http://localhost:8000/api/chat/sync \
+  -H "Content-Type: application/json" \
+  -d '{"message": "utilidad neta de Banorte"}' | python3 -m json.tool
+# Esperado: answer_md no vacío, llm_calls > 5, citations > 0
+```
+
+### Endpoint de producción:
+```bash
+curl -s -X POST https://banorte-ir-agent-851077316741.us-central1.run.app/api/chat/sync \
+  -H "Content-Type: application/json" \
+  -d '{"message": "ROE y ROA de Banorte en 2T26"}' --max-time 130 \
+  | python3 -c "import json,sys; d=json.load(sys.stdin); print('answer:', d['answer_md'][:200])"
 ```
 
 ### Runner fake rápido:

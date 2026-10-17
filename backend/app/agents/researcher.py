@@ -72,7 +72,7 @@ def make_researcher_node(tools: list[BaseTool]):
         llm_with_tools = llm.bind_tools(tools)
 
         while tool_calls_used < settings.MAX_TOOL_CALLS_RESEARCHER:
-            response = llm_with_tools.invoke(messages)
+            response = await llm_with_tools.ainvoke(messages)
             messages.append(response)
 
             # ¿Terminó con JSON final?
@@ -118,9 +118,13 @@ def make_researcher_node(tools: list[BaseTool]):
                             if cid and cid not in evidence_ids:
                                 evidence_ids.append(cid)
                                 try:
-                                    new_evidence[cid] = Chunk(**{
+                                    chunk_data = {
                                         k: hit[k] for k in Chunk.model_fields if k in hit
-                                    })
+                                    }
+                                    # SearchHit no incluye embed_text (campo requerido en Chunk)
+                                    if "embed_text" not in chunk_data:
+                                        chunk_data["embed_text"] = hit.get("text", "")
+                                    new_evidence[cid] = Chunk(**chunk_data)
                                 except Exception:  # noqa: BLE001
                                     pass
                             p = hit.get("page")
@@ -157,8 +161,8 @@ def make_researcher_node(tools: list[BaseTool]):
         return {
             "findings": [finding],
             "evidence": new_evidence,
-            "tool_calls": state.tool_calls + new_tool_calls,
-            "llm_calls": state.llm_calls + tool_calls_used + 1,
+            "tool_calls": new_tool_calls,
+            "llm_calls": tool_calls_used + 1,
         }
 
     return researcher_node

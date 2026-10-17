@@ -72,7 +72,9 @@ def _route_after_verifier(state: GraphState) -> str:
 # ─────────────────────────────────────────────────────────────────
 
 def replan_node(state: GraphState) -> dict:
-    return {"replans": state.replans + 1, "findings": [], "evidence": {}, "draft": None}
+    # No reseteamos evidence: con el reductor merge {} no borraría evidencia anterior.
+    # Mantener evidencia previa durante replan es correcto (los researchers agregan más).
+    return {"replans": state.replans + 1, "findings": [], "draft": None}
 
 
 # ─────────────────────────────────────────────────────────────────

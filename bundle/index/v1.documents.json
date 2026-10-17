@@ -1,0 +1,68 @@
+[
+  {
+    "doc_id": "conference_call_2q26",
+    "title": "Earnings Call",
+    "source_kind": "estado_financiero",
+    "report_period": "2T26",
+    "year": 2026,
+    "quarter": 2,
+    "lang": "en",
+    "pages": 28,
+    "filename": "Conference Call 2Q26.pdf"
+  },
+  {
+    "doc_id": "estado_financiero_2t26",
+    "title": "A  C  T  I  V  O",
+    "source_kind": "estado_financiero",
+    "report_period": "2026",
+    "year": 2026,
+    "quarter": null,
+    "lang": "es",
+    "pages": 1,
+    "filename": "Estado Financiero 2T26.pdf"
+  },
+  {
+    "doc_id": "informe_anual_2025",
+    "title": "20",
+    "source_kind": "presentacion",
+    "report_period": "2025",
+    "year": 2025,
+    "quarter": null,
+    "lang": "es",
+    "pages": 283,
+    "filename": "Informe Anual 2025.pdf"
+  },
+  {
+    "doc_id": "reporte_de_resultados_1t26",
+    "title": "INFORMACIÓN",
+    "source_kind": "presentacion",
+    "report_period": "1T26",
+    "year": 2026,
+    "quarter": 1,
+    "lang": "es",
+    "pages": 83,
+    "filename": "Reporte de Resultados 1T26.pdf"
+  },
+  {
+    "doc_id": "reporte_de_resultados_2t25",
+    "title": "INFORMACIÓN",
+    "source_kind": "estado_financiero",
+    "report_period": "2T25",
+    "year": 2025,
+    "quarter": 2,
+    "lang": "es",
+    "pages": 86,
+    "filename": "Reporte de Resultados 2T25.pdf"
+  },
+  {
+    "doc_id": "reporte_de_resultados_2t26",
+    "title": "INFORMACIÓN",
+    "source_kind": "estado_financiero",
+    "report_period": "2T26",
+    "year": 2026,
+    "quarter": 2,
+    "lang": "es",
+    "pages": 85,
+    "filename": "Reporte de Resultados 2T26.pdf"
+  }
+]

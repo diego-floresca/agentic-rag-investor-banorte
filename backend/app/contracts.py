@@ -289,6 +289,18 @@ def _sum_findings(left: list[Finding], right: list[Finding]) -> list[Finding]:
     return left + right
 
 
+def _merge_evidence(left: dict, right: dict) -> dict:
+    """Reductor: fusiona evidencia de researchers paralelos (fan-out)."""
+    merged = dict(left)
+    merged.update(right)
+    return merged
+
+
+def _sum_int(left: int, right: int) -> int:
+    """Reductor suma para contadores de llamadas (cada nodo devuelve su delta)."""
+    return left + right
+
+
 class GraphState(BaseModel):
     """Estado mutable del grafo; usa Annotated para reductores de LangGraph."""
 
@@ -301,11 +313,13 @@ class GraphState(BaseModel):
     plan: Optional[Plan] = None
     # findings usa reductor suma para que varios researcher nodes puedan escribir
     findings: Annotated[list[Finding], _sum_findings] = Field(default_factory=list)
-    evidence: dict[str, Chunk] = Field(default_factory=dict)
+    # evidence usa reductor merge para que researchers paralelos no colisionen
+    evidence: Annotated[dict[str, Chunk], _merge_evidence] = Field(default_factory=dict)
     draft: Optional[Draft] = None
     verification: Optional[Verification] = None
     final_answer: Optional[str] = None
     citations: list[Citation] = Field(default_factory=list)
     replans: int = 0
-    tool_calls: int = 0
-    llm_calls: int = 0
+    # tool_calls y llm_calls usan reductor suma: cada nodo devuelve su delta
+    tool_calls: Annotated[int, _sum_int] = 0
+    llm_calls: Annotated[int, _sum_int] = 0

@@ -8,7 +8,6 @@
 frontend/.next
 **/__pycache__
 backend/.env
-*.sqlite
 .pytest_cache
 **/.pytest_cache
 *.pyc

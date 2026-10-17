@@ -18,6 +18,15 @@ export default function Home() {
   const [docsLoading, setDocsLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [pdfView, setPdfView] = useState<PdfView | null>(null);
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("theme");
+    if (saved === "dark") {
+      setIsDark(true);
+      document.documentElement.setAttribute("data-theme", "dark");
+    }
+  }, []);
 
   useEffect(() => {
     fetch(`${API_BASE}/documents`)
@@ -40,13 +49,20 @@ export default function Home() {
     setPdfView({ docId, page });
   }
 
+  function handleToggleDark() {
+    const next = !isDark;
+    setIsDark(next);
+    document.documentElement.setAttribute("data-theme", next ? "dark" : "");
+    localStorage.setItem("theme", next ? "dark" : "light");
+  }
+
   function handleToggleSidebar() {
     setSidebarOpen((v) => !v);
   }
 
   return (
     <div className="app-shell">
-      <TopBar onToggleSidebar={handleToggleSidebar} />
+      <TopBar onToggleSidebar={handleToggleSidebar} isDark={isDark} onToggleDark={handleToggleDark} />
 
       <div className="app-body">
         <aside

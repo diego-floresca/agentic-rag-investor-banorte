@@ -3,13 +3,43 @@
   --rojo: #EB0029;
   --rojo-web: #D82E34;
   --rojo-oscuro: #83181D;
+  --rojo-light: #fff0f2;
   --gris-900: #343E47;
   --gris-700: #5D666F;
-  --gris-200: #E0E0E0;
-  --gris-100: #EBEFF1;
+  --gris-400: #9BA5AE;
+  --gris-200: #E0E4E8;
+  --gris-150: #F0F3F5;
+  --gris-100: #F5F7F9;
   --blanco: #FFFFFF;
   --verde-ok: #2E7D32;
   --ambar: #B26A00;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px rgba(52,62,71,0.06);
+  --shadow-sm: 0 2px 6px rgba(52,62,71,0.08), 0 1px 2px rgba(52,62,71,0.04);
+  --shadow-md: 0 4px 16px rgba(52,62,71,0.10), 0 1px 4px rgba(52,62,71,0.06);
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+}
+
+/* Dark mode overrides */
+[data-theme="dark"] {
+  --rojo-light: rgba(235,0,41,0.12);
+  --gris-900: #e0e3e6;
+  --gris-700: #a8b0b8;
+  --gris-400: #6b757e;
+  --gris-200: #3a424a;
+  --gris-150: #252d35;
+  --gris-100: #1a1f24;
+  --blanco: #242b32;
+  --verde-ok: #4caf50;
+  --ambar: #ffa726;
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.2);
+  --shadow-sm: 0 2px 6px rgba(0,0,0,0.25);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.3);
 }
 
 /* Reset */
@@ -72,12 +102,13 @@ button {
 }
 
 .app-sidebar {
-  width: 260px;
+  width: 272px;
   flex-shrink: 0;
   background: var(--blanco);
   border-right: 1px solid var(--gris-200);
   overflow-y: auto;
-  transition: width 0.2s ease;
+  transition: width 0.22s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: var(--shadow-xs);
 }
 
 .app-sidebar.collapsed {

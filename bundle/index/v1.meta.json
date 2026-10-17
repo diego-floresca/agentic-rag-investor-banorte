@@ -1,0 +1,8 @@
+{
+  "version": "v1",
+  "n_chunks": 3324,
+  "n_docs": 6,
+  "embed_model": "gemini-embedding-2",
+  "embed_dim": 1536,
+  "embed_provider": "gemini2"
+}

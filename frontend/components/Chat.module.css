@@ -3,60 +3,84 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  background: var(--gris-100);
 }
 
 .messageArea {
   flex: 1;
   overflow-y: auto;
-  padding: 12px 0;
+  padding: 20px 0 8px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
+  scroll-behavior: smooth;
 }
 
+/* Welcome screen */
 .welcome {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 48px 24px 24px;
+  padding: 52px 28px 28px;
   text-align: center;
 }
 
+.welcomeIcon {
+  width: 52px;
+  height: 52px;
+  background: linear-gradient(135deg, var(--rojo), var(--rojo-oscuro));
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--blanco);
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-sm);
+  letter-spacing: -0.5px;
+}
+
 .welcomeTitle {
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 700;
   color: var(--gris-900);
   margin-bottom: 8px;
+  letter-spacing: -0.01em;
 }
 
 .welcomeSubtitle {
   font-size: 14px;
   color: var(--gris-700);
-  max-width: 460px;
-  line-height: 1.5;
-  margin-bottom: 8px;
+  max-width: 440px;
+  line-height: 1.6;
+  margin-bottom: 20px;
 }
 
 /* Input area */
 .inputArea {
   flex-shrink: 0;
-  border-top: 1px solid var(--gris-200);
   background: var(--blanco);
-  padding: 10px 12px;
+  border-top: 1px solid var(--gris-200);
+  padding: 12px 16px 14px;
+  box-shadow: 0 -2px 12px rgba(52,62,71,0.06);
 }
 
 .inputRow {
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  background: var(--blanco);
+  background: var(--gris-100);
   border: 1.5px solid var(--gris-200);
-  border-radius: 10px;
-  padding: 6px 8px;
+  border-radius: var(--radius-lg);
+  padding: 8px 8px 8px 14px;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .inputRow:focus-within {
   border-color: var(--rojo);
+  box-shadow: 0 0 0 3px rgba(235,0,41,0.08);
+  background: var(--blanco);
 }
 
 .textarea {
@@ -68,52 +92,76 @@
   font-size: 14px;
   color: var(--gris-900);
   background: transparent;
-  line-height: 1.5;
+  line-height: 1.55;
   max-height: 160px;
   overflow-y: auto;
-  padding: 2px 4px;
+  padding: 2px 0;
 }
 
 .textarea::placeholder {
-  color: var(--gris-700);
+  color: var(--gris-400);
 }
 
 .textarea:disabled {
   opacity: 0.6;
 }
 
-.btn {
-  flex-shrink: 0;
-  padding: 7px 14px;
-  border-radius: 7px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  align-self: flex-end;
-  transition: opacity 0.15s;
-}
-
+/* Send / Stop button */
 .sendBtn {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
   background: var(--rojo);
   color: var(--blanco);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, transform 0.1s, opacity 0.15s;
+  align-self: flex-end;
 }
 
 .sendBtn:hover:not(:disabled) {
   background: var(--rojo-oscuro);
+  transform: scale(1.06);
 }
 
 .sendBtn:disabled {
-  opacity: 0.4;
+  background: var(--gris-200);
+  color: var(--gris-400);
   cursor: not-allowed;
+  transform: none;
 }
 
 .stopBtn {
-  background: var(--gris-200);
+  flex-shrink: 0;
+  padding: 0 14px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--gris-200);
+  cursor: pointer;
+  background: var(--blanco);
   color: var(--gris-900);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  gap: 6px;
+  transition: background 0.15s, border-color 0.15s;
+  align-self: flex-end;
 }
 
 .stopBtn:hover {
-  background: var(--gris-700);
-  color: var(--blanco);
+  background: var(--gris-150);
+  border-color: var(--gris-700);
+}
+
+/* Send icon SVG */
+.sendIcon {
+  width: 16px;
+  height: 16px;
+  display: block;
 }

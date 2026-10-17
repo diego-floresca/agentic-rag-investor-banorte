@@ -1,89 +1,153 @@
 .list {
-  padding: 0 0 16px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding-bottom: 16px;
 }
 
+/* Sidebar header */
 .header {
-  font-size: 11px;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--gris-200);
+  position: sticky;
+  top: 0;
+  background: var(--blanco);
+  z-index: 1;
+}
+
+.headerLabel {
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--gris-700);
-  padding: 14px 14px 8px;
-  border-bottom: 1px solid var(--gris-200);
+  letter-spacing: 0.1em;
+  color: var(--gris-400);
+  margin-bottom: 4px;
 }
 
+.headerTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gris-900);
+}
+
+/* Period group */
 .group {
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
 .periodHeader {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--gris-700);
-  padding: 8px 14px 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px 4px;
 }
 
+.periodPill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--rojo-oscuro);
+  background: var(--rojo-light);
+  border: 1px solid rgba(235,0,41,0.18);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.periodDivider {
+  flex: 1;
+  height: 1px;
+  background: var(--gris-200);
+}
+
+/* Document item */
 .docItem {
-  padding: 7px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 16px;
   cursor: default;
+  border-left: 3px solid transparent;
+  transition: background 0.12s, border-color 0.12s;
 }
 
 .docItem:hover {
   background: var(--gris-100);
+  border-left-color: var(--rojo);
+}
+
+.docIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  font-size: 15px;
+  opacity: 0.55;
+}
+
+.docContent {
+  min-width: 0;
+  flex: 1;
 }
 
 .docTitle {
-  font-size: 13px;
+  font-size: 12.5px;
   color: var(--gris-900);
   display: block;
   line-height: 1.4;
+  font-weight: 500;
 }
 
 .docMeta {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-top: 3px;
+  margin-top: 4px;
 }
 
 .badge {
-  font-size: 10px;
-  font-weight: 600;
-  background: var(--gris-200);
+  font-size: 9.5px;
+  font-weight: 700;
+  background: var(--gris-150);
   color: var(--gris-700);
   padding: 1px 6px;
   border-radius: 999px;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
+  border: 1px solid var(--gris-200);
 }
 
 .pages {
-  font-size: 11px;
-  color: var(--gris-700);
+  font-size: 10.5px;
+  color: var(--gris-400);
 }
 
+/* Empty / error */
 .empty {
-  padding: 24px 14px;
+  padding: 32px 16px;
   font-size: 13px;
   color: var(--gris-700);
+  text-align: center;
+  line-height: 1.6;
 }
 
 /* Skeleton */
 .skeletonItem {
-  padding: 10px 14px;
+  padding: 10px 16px;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  align-items: flex-start;
+  gap: 10px;
 }
 
 .skeletonLine {
-  height: 14px;
-  width: 80%;
+  height: 13px;
+  width: 75%;
+  border-radius: 4px;
 }
 
 .skeletonShort {
   height: 10px;
-  width: 40%;
+  width: 38%;
+  border-radius: 4px;
+  margin-top: 5px;
 }

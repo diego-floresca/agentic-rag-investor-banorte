@@ -1,7 +1,5 @@
 # Arquitectura — Chat RAG Agéntico de Relación con Inversionistas
 
-> Borrador: se completa con cifras medidas al cierre.
-
 ## Diagrama
 
 ```mermaid
@@ -54,7 +52,7 @@ flowchart TB
 
     FE -->|HTTP/JSON| API
     API -->|SSEEvent| Grafo
-    Grafo -->|tools| MCP
+    Grafo -->|RETRIEVAL_MODE=direct| IndiceVN
     MCP -->|IndexReader| IndiceVN
   end
 
@@ -94,4 +92,13 @@ flowchart TB
 
 ---
 
-> Borrador: se completa con cifras medidas al cierre (latencias P50/P95, tokens por llamada, hits@k, precisión verificador).
+## Cifras medidas en producción (Cloud Run · gemini-3.8-flash · GRAPH_MODE=full)
+
+| Métrica | Valor |
+|---|---|
+| `llm_calls` típico por pregunta | 18–22 |
+| `tool_calls` típico por pregunta | 10–14 |
+| Citas por respuesta | 5–9 |
+| Latencia P50 | ~50–90 s |
+| Timeout configurado | 120 s |
+| Memoria imagen Docker | ~95 MB (índice + PDFs + código) |

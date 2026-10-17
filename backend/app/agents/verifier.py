@@ -184,7 +184,7 @@ def verifier_node(state: GraphState) -> dict:
             issues=issues,
             feedback=feedback,
         ),
-        "llm_calls": state.llm_calls + (1 if needs_llm and not issues else 0),
+        "llm_calls": (1 if needs_llm and not issues else 0),
     }
 
 

@@ -120,7 +120,7 @@ def planner_node(state: GraphState) -> dict:
             direct_answer=f"Error al planificar: {exc}",
         )
 
-    return {"plan": plan, "llm_calls": state.llm_calls + 1}
+    return {"plan": plan, "llm_calls": 1}
 
 
 def _build_catalog_summary() -> str:

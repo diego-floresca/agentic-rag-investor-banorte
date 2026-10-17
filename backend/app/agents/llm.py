@@ -81,6 +81,7 @@ _ROLE_UPPER = {
 
 def _make_gemini(role: str) -> BaseChatModel:
     from langchain_google_genai import ChatGoogleGenerativeAI  # noqa: PLC0415
+    from google.genai.types import AutomaticFunctionCallingConfig  # noqa: PLC0415
 
     suffix = _ROLE_UPPER.get(role, "GUARD")
     model_name = os.environ.get(f"MODEL_{suffix}", settings.LLM_MODEL)
@@ -91,6 +92,13 @@ def _make_gemini(role: str) -> BaseChatModel:
         "model": model_name,
         "temperature": 0,
         "google_api_key": settings.GEMINI_API_KEY or None,
+        # Deshabilitar AFC: el google-genai SDK lo activa por defecto.
+        # AFC intenta ejecutar las tools dentro del SDK pero son StructuredTools
+        # de LangChain que solo existen en nuestro proceso; Gemini no puede
+        # llamarlas y devuelve contenido vacío.
+        "model_kwargs": {
+            "automatic_function_calling": AutomaticFunctionCallingConfig(disable=True),
+        },
     }
 
     if use_thinking:

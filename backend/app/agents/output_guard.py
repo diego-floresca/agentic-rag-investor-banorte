@@ -33,14 +33,30 @@ _CHUNK_REF = re.compile(r"\[([^\]]+:[^\]]+)\]")
 
 def output_guard_node(state: GraphState) -> dict:
     """Post-procesa el draft y construye la respuesta final."""
-    draft: Draft | None = state.draft
+    draft = state.draft
     if draft is None:
         # Sin draft: usar direct_answer del plan si existe
-        direct = state.plan.direct_answer if state.plan else None
+        plan = state.plan
+        plan_direct = (
+            plan.get("direct_answer") if isinstance(plan, dict)
+            else (plan.direct_answer if plan else None)
+        )
         return {
-            "final_answer": direct or "No se encontró respuesta.",
+            "final_answer": plan_direct or "No se encontró respuesta.",
             "citations": [],
         }
+
+    # LangGraph puede deserializar modelos Pydantic anidados como dicts al
+    # restaurar del checkpoint (MemorySaver). Convertir a Draft si es necesario.
+    if isinstance(draft, dict):
+        try:
+            draft = Draft(**draft)
+        except Exception:  # noqa: BLE001
+            answer_md = draft.get("answer_md", "")
+            return {
+                "final_answer": answer_md or "No se pudo procesar la respuesta.",
+                "citations": [],
+            }
 
     answer = draft.answer_md
 

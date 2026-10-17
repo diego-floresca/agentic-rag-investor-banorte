@@ -231,9 +231,18 @@ REGLAS CRÍTICAS:
             if not hasattr(response, "tool_calls") or not response.tool_calls:
                 break
 
+            hit_limit = False
             for tc in response.tool_calls:
                 if tool_calls_used >= settings.MAX_TOOL_CALLS_ANALYST:
-                    break
+                    # Siempre responder todos los tool_calls del AIMessage para no
+                    # dejar IDs sin ToolMessage (Gemini puede devolver vacío si quedan).
+                    messages.append(ToolMessage(
+                        content=json.dumps({"note": "límite de herramientas alcanzado"}),
+                        tool_call_id=tc.get("id", ""),
+                    ))
+                    hit_limit = True
+                    continue
+
                 tool_name = tc["name"]
                 tool_args = tc["args"]
                 tool = tools_by_name.get(tool_name)
@@ -261,11 +270,36 @@ REGLAS CRÍTICAS:
                     tool_call_id=tc.get("id", ""),
                 ))
 
+            if hit_limit:
+                break
+
+        # Si el loop terminó por límite de herramientas, el último mensaje es un
+        # ToolMessage — necesitamos una llamada LLM final para obtener el texto.
+        if isinstance(messages[-1], ToolMessage):
+            final_resp = llm.invoke(messages)
+            messages.append(final_resp)
+
         draft = _parse_draft(messages[-1], calculations)
+
+        # Si el draft quedó vacío o con solo el JSON crudo, pedir una respuesta
+        # en texto plano sin formato JSON para evitar que la respuesta llegue vacía.
+        if not draft.answer_md.strip() or draft.answer_md.strip().startswith("{"):
+            retry_msg = HumanMessage(
+                content=(
+                    "La respuesta anterior no está clara. "
+                    "Escribe directamente en español la respuesta a la pregunta del usuario "
+                    "basándote en la evidencia. NO uses JSON. Sé conciso y cita las fuentes [chunk_id]."
+                )
+            )
+            retry_resp = llm.invoke(messages + [retry_msg])
+            retry_content = extract_text(retry_resp)
+            if retry_content.strip():
+                draft = Draft(answer_md=retry_content, calculations=draft.calculations)
+
         return {
             "draft": draft,
-            "tool_calls": state.tool_calls + new_tool_calls,
-            "llm_calls": state.llm_calls + tool_calls_used + 1,
+            "tool_calls": new_tool_calls,
+            "llm_calls": tool_calls_used + 1,
         }
 
     return analyst_node
@@ -317,11 +351,13 @@ def _parse_draft(last_msg: Any, calculations: list[Calculation]) -> Draft:
                     calculations.append(Calculation(**c))
                 except Exception:  # noqa: BLE001
                     pass
+            # Si answer_md está vacío en el JSON, usar el texto completo como fallback
+            answer_md = data.get("answer_md") or content
             return Draft(
-                answer_md=data.get("answer_md", content),
+                answer_md=answer_md,
                 calculations=calculations,
             )
         except Exception:  # noqa: BLE001
             pass
-    # Si no hay JSON, usar el contenido completo como respuesta
+    # Si no hay JSON válido, usar el contenido completo como respuesta
     return Draft(answer_md=content, calculations=calculations)

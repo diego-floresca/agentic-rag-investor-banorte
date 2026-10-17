@@ -32,6 +32,13 @@ from app.config import settings
 
 _CHUNK_SIZE = 20  # caracteres por TokenEvent
 
+
+def _sv(state, key, default=None):
+    """Lee un campo del estado que puede ser dict o Pydantic BaseModel."""
+    if isinstance(state, dict):
+        return state.get(key, default)
+    return getattr(state, key, default)
+
 # Registrar observabilidad al importar (una vez)
 _register_otel()
 
@@ -97,22 +104,50 @@ async def run_chat(session_id: str, message: str) -> AsyncIterator[SSEEvent]:
         final_state = await _get_final_state(graph, config)
 
         if final_state:
+            # snapshot.values puede ser dict o GraphState (Pydantic); _sv maneja ambos.
+
             # Emitir plan si existe
-            if final_state.get("plan"):
-                plan = final_state["plan"]
-                yield PlanEvent(
-                    intent=plan.intent,
-                    entity=plan.entity,
-                    subqueries=[sq.model_dump() for sq in plan.subqueries],
-                )
+            plan_data = _sv(final_state, "plan")
+            if plan_data:
+                if isinstance(plan_data, dict):
+                    yield PlanEvent(
+                        intent=plan_data.get("intent", ""),
+                        entity=plan_data.get("entity", ""),
+                        subqueries=plan_data.get("subqueries", []),
+                    )
+                else:
+                    yield PlanEvent(
+                        intent=plan_data.intent,
+                        entity=plan_data.entity,
+                        subqueries=[
+                            sq if isinstance(sq, dict) else sq.model_dump()
+                            for sq in (plan_data.subqueries or [])
+                        ],
+                    )
 
             # Emitir verificación si existe y no se emitió ya
-            if not emitted_verification and final_state.get("verification"):
-                v = final_state["verification"]
-                yield VerificationEvent(verdict=v.verdict, issues=v.issues)
+            v_data = _sv(final_state, "verification")
+            if not emitted_verification and v_data:
+                if isinstance(v_data, dict):
+                    yield VerificationEvent(
+                        verdict=v_data.get("verdict", "partial"),
+                        issues=v_data.get("issues", []),
+                    )
+                else:
+                    yield VerificationEvent(verdict=v_data.verdict, issues=v_data.issues)
 
             # Emitir respuesta en trozos
-            answer = final_state.get("final_answer", "")
+            answer = _sv(final_state, "final_answer") or ""
+            if not answer:
+                # Fallback: si final_answer está vacío pero el draft tiene contenido
+                # (output_guard pudo fallar silenciosamente), usar draft.answer_md
+                draft_data = _sv(final_state, "draft")
+                if draft_data:
+                    answer = (
+                        draft_data.get("answer_md", "")
+                        if isinstance(draft_data, dict)
+                        else getattr(draft_data, "answer_md", "")
+                    ) or ""
             if answer:
                 yield StatusEvent(stage="output", message="Generando respuesta")
                 for i in range(0, len(answer), _CHUNK_SIZE):
@@ -120,12 +155,13 @@ async def run_chat(session_id: str, message: str) -> AsyncIterator[SSEEvent]:
                     await asyncio.sleep(0)
 
             # Emitir citaciones
-            citations = final_state.get("citations", [])
+            citations = _sv(final_state, "citations") or []
             if citations:
-                yield CitationsEvent(items=[c.model_dump() for c in citations])
+                items = [c if isinstance(c, dict) else c.model_dump() for c in citations]
+                yield CitationsEvent(items=items)
 
-            llm_calls = final_state.get("llm_calls", 0)
-            tool_calls = final_state.get("tool_calls", 0)
+            llm_calls = _sv(final_state, "llm_calls") or 0
+            tool_calls = _sv(final_state, "tool_calls") or 0
         else:
             llm_calls = 0
             tool_calls = 0

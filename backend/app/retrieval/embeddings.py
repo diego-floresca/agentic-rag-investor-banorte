@@ -261,8 +261,9 @@ def get_embedder(*, use_cache: bool = True) -> Embedder:
         inner: Embedder = FakeEmbedder(dim=settings.EMBED_DIM)
     elif provider == "none":
         inner = NoneEmbedder()
-    elif provider == "gemini":
-        inner = GeminiEmbedder()
+    elif provider in ("gemini", "gemini2", "gemini1"):
+        # gemini2 → gemini-embedding-2 dim=1536; gemini1 → dim=768
+        inner = GeminiEmbedder(model=settings.EMBED_MODEL, dim=settings.EMBED_DIM)
     elif provider == "fastembed":
         # Importación perezosa: evita cargar el modelo en tests
         from fastembed import TextEmbedding  # noqa: PLC0415
